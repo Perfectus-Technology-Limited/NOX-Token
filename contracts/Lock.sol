@@ -88,21 +88,12 @@ contract NOX is IERC20, Ownable {
     event ProtectedWallet(address, address, uint256, uint8);
 
     constructor() {
-        router = IUniswapV2Router02(routerAddress);
-        pair = IUniswapV2Factory(router.factory()).createPair(
-            router.WETH(),
-            address(this)
-        );
-        liquidityPools[pair] = true;
-        _allowances[owner()][routerAddress] = type(uint256).max;
-        _allowances[address(this)][routerAddress] = type(uint256).max;
-
         isFeeExempt[owner()] = true;
         liquidityCreator[owner()] = true;
 
         isTxLimitExempt[address(this)] = true;
         isTxLimitExempt[owner()] = true;
-        isTxLimitExempt[routerAddress] = true;
+
         isTxLimitExempt[DEAD] = true;
 
         _balances[owner()] = _totalSupply;
@@ -283,10 +274,7 @@ contract NOX is IERC20, Ownable {
         if (inSwap || isAuthorized[sender] || isAuthorized[recipient]) {
             return _basicTransfer(sender, recipient, amount);
         }
-        if (!launched() && liquidityPools[recipient]) {
-            require(liquidityCreator[sender], "Liquidity not added yet.");
-            launch();
-        }
+
         if (!startBullRun) {
             require(
                 liquidityCreator[sender] || liquidityCreator[recipient],
@@ -593,6 +581,15 @@ contract NOX is IERC20, Ownable {
 
     function getCirculatingSupply() public view returns (uint256) {
         return _totalSupply - (balanceOf(DEAD) + balanceOf(ZERO));
+    }
+
+    function setTheRouter(address _router, address _pair) external onlyOwner {
+        router = IUniswapV2Router02(_router);
+        pair = _pair;
+        liquidityPools[pair] = true;
+        _allowances[owner()][_router] = type(uint256).max;
+        _allowances[address(this)][_router] = type(uint256).max;
+        isTxLimitExempt[_router] = true;
     }
 
     event FundsDistributed(uint256 marketingETH, uint256 devETH);
