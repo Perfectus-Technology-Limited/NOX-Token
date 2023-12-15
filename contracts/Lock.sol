@@ -21,8 +21,8 @@ contract NOX is IERC20, Ownable {
     uint256 _maxSellTxAmount = (_totalSupply * 1) / 200;
     uint256 _maxWalletSize = (_totalSupply * 1) / 100;
 
-    mapping(address => uint256) _balances;
-    mapping(address => mapping(address => uint256)) _allowances;
+    mapping(address => uint256) private _balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
     mapping(address => uint256) public lastSell;
     mapping(address => uint256) public lastBuy;
 
@@ -31,14 +31,14 @@ contract NOX is IERC20, Ownable {
     mapping(address => bool) public liquidityCreator;
     mapping(address => bool) public isAuthorized;
 
-    uint256 marketingSellFee = 400;
-    uint256 devSellFee = 100;
+    uint256 public marketingSellFee = 400;
+    uint256 public devSellFee = 100;
 
-    uint256 totalSellFee = marketingSellFee + devSellFee;
+    uint256 public totalSellFee = marketingSellFee + devSellFee;
 
-    uint256 transferTax = 500;
+    uint256 public transferTax = 500;
 
-    uint256 feeDenominator = 10000;
+    uint256 public feeDenominator = 10000;
     bool public isTransferTax = true;
 
     address payable public devFeeReceiver =
@@ -47,22 +47,22 @@ contract NOX is IERC20, Ownable {
         payable(0x6d2FD31d8Fb076113b07FcD481152AA76cD36995);
 
     IUniswapV2Router02 public router;
-    address routerAddress = 0x81cD91B6BD7D275a7AeebBA15929AE0f0751d18C;
+    address private routerAddress = 0x81cD91B6BD7D275a7AeebBA15929AE0f0751d18C;
     mapping(address => bool) liquidityPools;
     mapping(address => uint256) public protected;
-    bool protectionEnabled = true;
-    bool protectionDisabled = false;
+    bool private protectionEnabled = true;
+    bool private protectionDisabled = false;
     uint256 protectionLimit;
     uint256 public protectionCount;
-    uint256 protectionTimer;
+    uint256 public protectionTimer;
 
     address public pair;
 
     uint256 public launchedAt;
     uint256 public launchedTime;
     uint256 public deadBlocks;
-    bool startBullRun = false;
-    bool pauseDisabled = false;
+    bool public startBullRun = false;
+    bool public pauseDisabled = false;
     uint256 public rateLimit = 2;
 
     bool public swapEnabled = false;
@@ -217,16 +217,6 @@ contract NOX is IERC20, Ownable {
         launchedAt = block.number;
         protectionTimer = block.timestamp + _protection;
         protectionLimit = _limit * (10 ** _decimals);
-    }
-
-    function pauseTrading() external onlyTeam {
-        require(!pauseDisabled);
-        startBullRun = false;
-    }
-
-    function disablePause() external onlyTeam {
-        pauseDisabled = true;
-        startBullRun = true;
     }
 
     function setProtection(bool _protect, uint256 _addTime) external onlyTeam {
