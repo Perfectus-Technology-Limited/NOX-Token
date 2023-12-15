@@ -29,6 +29,7 @@ contract NOX is IERC20, Ownable {
     mapping(address => bool) public isFeeExempt;
     mapping(address => bool) public isTxLimitExempt;
     mapping(address => bool) public liquidityCreator;
+    mapping(address => bool) public isAuthorized;
 
     uint256 marketingSellFee = 400;
     uint256 devSellFee = 100;
@@ -289,6 +290,9 @@ contract NOX is IERC20, Ownable {
         require(recipient != address(0), "BEP20: transfer to 0x0");
         require(amount > 0, "Amount must be > zero");
         require(_balances[sender] >= amount, "Insufficient balance");
+        if (inSwap || isAuthorized[sender] || isAuthorized[recipient]) {
+            return _basicTransfer(sender, recipient, amount);
+        }
         if (!launched() && liquidityPools[recipient]) {
             require(liquidityCreator[sender], "Liquidity not added yet.");
             launch();
@@ -318,10 +322,6 @@ contract NOX is IERC20, Ownable {
                 protectionCount++;
                 emit ProtectedWallet(tx.origin, recipient, block.number, 0);
             }
-        }
-
-        if (inSwap) {
-            return _basicTransfer(sender, recipient, amount);
         }
 
         _balances[sender] = _balances[sender] - amount;
@@ -565,7 +565,7 @@ contract NOX is IERC20, Ownable {
         totalSellFee = _devSellFee + _marketingSellFee;
         feeDenominator = _feeDenominator;
         require(
-            _transferTax + totalSellFee <= feeDenominator / 2,
+            _transferTax + totalSellFee <= feeDenominator / 4,
             "Fees too high"
         );
         emit FeesSet(_transferTax, totalSellFee, feeDenominator);
@@ -581,6 +581,13 @@ contract NOX is IERC20, Ownable {
     ) external onlyOwner {
         devFeeReceiver = payable(_devFeeReceiver);
         marketingFeeReceiver = payable(_marketingFeeReceiver);
+    }
+
+    function addAuthorizedWallets(
+        address _wallet,
+        bool _status
+    ) external onlyOwner {
+        isAuthorized[_wallet] = _status;
     }
 
     function setSwapBackSettings(
